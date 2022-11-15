@@ -1,4 +1,4 @@
-import { InMemoryLRUCache, KeyValueCache } from 'apollo-server-caching';
+import { InMemoryLRUCache, KeyValueCache } from '@apollo/utils.keyvaluecache';
 
 class GRPCCache {
   public keyValueCache: KeyValueCache<string>;

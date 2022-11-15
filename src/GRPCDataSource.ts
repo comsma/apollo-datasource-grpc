@@ -1,11 +1,13 @@
 import { DataSource, DataSourceConfig } from 'apollo-datasource';
 import crypto from 'crypto';
 import GRPCCache from './GRPCCache';
+import {ServiceClient} from "@grpc/grpc-js/build/src/make-client";
+import {CallOptionsI} from "./types/call.interface";
 
 abstract class GRPCDataSource<TContext = any> extends DataSource {
   cache!: GRPCCache;
   context!: TContext;
-  client: any;
+  client!: ServiceClient;
 
   constructor() {
     super();
@@ -16,15 +18,16 @@ abstract class GRPCDataSource<TContext = any> extends DataSource {
     this.cache = new GRPCCache(config.cache);
   }
 
-  async callRPC(ttl = 5, request: any, fnTransformResponseData?: any) {
-    const cacheKey = this.getCacheKey(request.args, request.rpcName);
+  async callRPC(ttl = 5, callOptions: CallOptionsI, fnTransformResponseData?: any) {
+    const cacheKey = this.getCacheKey(callOptions.params, callOptions.rpcName);
 
     const entry = await this.cache.get(cacheKey);
 
     if (entry) return entry;
 
-    const response = await new Promise((resolve: any, reject: any) => {
-      this.client[request.rpcName]({ ...request.args }, request.meta, (err: any, response: any) => {
+    return  await new Promise((resolve: any, reject: any) => {
+
+      this.client[callOptions.rpcName]({ ...callOptions.params }, callOptions.meta, (err: any, response: any) => {
         if (err) {
           console.log(err);
           return reject(err);
@@ -40,8 +43,6 @@ abstract class GRPCDataSource<TContext = any> extends DataSource {
         }
       });
     });
-
-    return response;
   }
 
   getCacheKey(args: any, rpcName: string) {
